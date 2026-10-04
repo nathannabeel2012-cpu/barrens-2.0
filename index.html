@@ -2378,85 +2378,55 @@ const supabaseClient = window.supabase.createClient(
 
 
 /* LOAD GUESTBOOK */
-
 async function loadGuestbook() {
-
     const entriesContainer =
         document.getElementById("guestbookEntries");
-
     if (!entriesContainer) return;
-
     const { data, error } = await supabaseClient
         .from("guestbook")
         .select("name, message, created_at")
         .order("created_at", { ascending: false })
         .limit(50);
-
-    if (error) {
+   if (error) {
         console.error("Guestbook error:", error);
         entriesContainer.innerHTML =
             "<p>UNABLE TO LOAD ARCHIVE ENTRIES.</p>";
         return;
     }
-
     if (!data || data.length === 0) {
         entriesContainer.innerHTML =
             "<p>NO ARCHIVE ENTRIES YET.</p>";
         return;
     }
-
     entriesContainer.innerHTML = data.map(entry => {
-
         const date = new Date(entry.created_at)
             .toLocaleDateString();
-
         return `
             <div class="guestbook-entry">
                 <div class="guestbook-entry-header">
                     <strong>${escapeHTML(entry.name)}</strong>
                     <span>${date}</span>
                 </div>
-
                 <p>${escapeHTML(entry.message)}</p>
             </div>
         `;
-
     }).join("");
 }
-
-
 /* SUBMIT GUESTBOOK */
-
-const guestbookForm =
-    document.getElementById("guestbookForm");
-
+const guestbookForm = document.getElementById("guestbookForm");
 if (guestbookForm) {
-
     guestbookForm.addEventListener("submit", async function(event) {
-
         event.preventDefault();
-
-        const name =
-            document.getElementById("guestName").value.trim();
-
-        const message =
-            document.getElementById("guestMessage").value.trim();
-
-        const status =
-            document.getElementById("guestbookStatus");
-
-        const button =
-            document.getElementById("guestbookSubmit");
-
+        const name = document.getElementById("guestName").value.trim();
+        const message = document.getElementById("guestMessage").value.trim();
+        const status = document.getElementById("guestbookStatus");
+        const button = document.getElementById("guestbookSubmit");
         if (!name || !message) {
-            status.textContent =
-                "PLEASE COMPLETE ALL FIELDS.";
+            status.textContent = "PLEASE COMPLETE ALL FIELDS.";
             return;
         }
-
         button.disabled = true;
         button.textContent = "SIGNING...";
-
         const { error } = await supabaseClient
             .from("guestbook")
             .insert([
@@ -2465,67 +2435,80 @@ if (guestbookForm) {
                     message: message
                 }
             ]);
-
         if (error) {
-
             console.error("Guestbook submission error:", error);
 
-            status.textContent =
-                "ERROR: ENTRY COULD NOT BE SAVED.";
+            status.textContent = "ERROR: ENTRY COULD NOT BE SAVED.";
 
             button.disabled = false;
             button.textContent = "SIGN ARCHIVE";
-
             return;
         }
-
         status.textContent = "ENTRY RECORDED.";
-
         guestbookForm.reset();
-
         button.disabled = false;
         button.textContent = "SIGN ARCHIVE";
-
         loadGuestbook();
     });
 }
-
-
 /* SECURITY */
-
 function escapeHTML(text) {
-
     const div = document.createElement("div");
     div.textContent = text;
-
     return div.innerHTML;
 }
-
-
-/* LOAD EXISTING ENTRIES */
-
-
-/* =========================
-   INITIALISE
-========================= */
-
+/* LOAD EXISTING GUESTBOOK ENTRIES */
+async function loadGuestbook() {
+    const entriesContainer =
+        document.getElementById("guestbookEntries");
+    if (!entriesContainer) return;
+    const { data, error } = await supabaseClient
+        .from("guestbook")
+        .select("name, message, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+    if (error) {
+        console.error("Guestbook error:", error);
+        entriesContainer.innerHTML =
+            "<p>UNABLE TO LOAD ARCHIVE ENTRIES.</p>";
+        return;
+    }
+    if (!data || data.length === 0) {
+        entriesContainer.innerHTML =
+            "<p>NO ARCHIVE ENTRIES YET.</p>";
+        return;
+    }
+    entriesContainer.innerHTML = data.map(entry => {
+        const date = new Date(entry.created_at)
+            .toLocaleDateString();
+        return `
+            <div class="guestbook-entry">
+                <div class="guestbook-entry-header">
+                    <strong>${escapeHTML(entry.name)}</strong>
+                    <span>${escapeHTML(date)}</span>
+                </div>
+                <div class="guestbook-entry-message">
+                    ${escapeHTML(entry.message)}
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+/* INITIALISE */
 randomFact();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = "https://uqnruaqqqmljnooyjtfw.supabase.co";
-
+const SUPABASE_URL =
+    "https://uqnruaqqqmljnooyjtfw.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
     "sb_publishable_qAVTW4kzRW75gLaVV8zkkA_ByV_TrqU";
-
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-);
-</script>
-    <script>
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+    );
 loadGuestbook();
 </script>
 </body>
 </html>
-
