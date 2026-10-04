@@ -6,7 +6,7 @@
 <title>The Barrens Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
     --black: #050708;
@@ -27,16 +27,6 @@
     --mono: "IBM Plex Mono", monospace;
     --serif: "Libre Baskerville", Georgia, serif;
 }
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Barrens Archive</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
-<style>
 /* =========================================================
    THE BARRENS ARCHIVE
    ========================================================= */
@@ -1703,60 +1693,44 @@ footer {
      GUESTBOOK
      ===================================================== -->
 
-<div class="section-heading">
+<section class="guestbook" id="guestbook">
 
-    <h2>GUESTBOOK</h2>
-
-</div>
-
-
-<section class="guestbook">
-
-
-    <div class="guestbook-title">
-        LEAVE YOUR MARK
+    <div class="guestbook-header">
+        <h2>LEAVE YOUR MARK</h2>
+        <p>SIGN THE ARCHIVE // PUBLIC MESSAGE BOARD</p>
     </div>
 
+    <form id="guestbookForm">
 
-    <div class="guestbook-subtitle">
-        SIGN THE ARCHIVE // PUBLIC MESSAGE BOARD
-    </div>
-
-
-    <div class="guestbook-row">
-
-        <label>
-            NAME
-        </label>
+        <label for="guestName">NAME</label>
 
         <input
             type="text"
             id="guestName"
+            maxlength="40"
+            required
+            autocomplete="name"
             placeholder="ENTER NAME..."
         >
 
-    </div>
-
-
-    <div class="guestbook-row">
-
-        <label>
-            MESSAGE
-        </label>
+        <label for="guestMessage">MESSAGE</label>
 
         <textarea
             id="guestMessage"
-            rows="5"
-            placeholder="WRITE SOMETHING..."
+            maxlength="500"
+            required
+            placeholder="ENTER MESSAGE..."
         ></textarea>
 
-    </div>
+        <button type="submit" id="guestbookSubmit">
+            SIGN ARCHIVE
+        </button>
 
+        <p id="guestbookStatus"></p>
 
-    <button onclick="signGuestbook()">
-        SIGN ARCHIVE
-    </button>
+    </form>
 
+    <div id="guestbookEntries"></div>
 
 </section>
 
@@ -2389,15 +2363,149 @@ function randomFact() {
 
 
 /* =========================
-   GUESTBOOK
+   SUPABASE GUESTBOOK
 ========================= */
 
-function openGuestbook() {
-    alert(
-        "THE GUESTBOOK IS CURRENTLY OFFLINE.\n\n" +
-        "SIGNING FUNCTIONALITY WILL BE ADDED LATER."
-    );
+const SUPABASE_URL = "https://uqnruaqqqmljnooyjtfw.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_qAVTW4kzRW75gLaVV8zkkA_ByV_TrqU";
+
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+);
+
+
+/* LOAD GUESTBOOK */
+
+async function loadGuestbook() {
+
+    const entriesContainer =
+        document.getElementById("guestbookEntries");
+
+    if (!entriesContainer) return;
+
+    const { data, error } = await supabaseClient
+        .from("guestbook")
+        .select("name, message, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+    if (error) {
+        console.error("Guestbook error:", error);
+        entriesContainer.innerHTML =
+            "<p>UNABLE TO LOAD ARCHIVE ENTRIES.</p>";
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        entriesContainer.innerHTML =
+            "<p>NO ARCHIVE ENTRIES YET.</p>";
+        return;
+    }
+
+    entriesContainer.innerHTML = data.map(entry => {
+
+        const date = new Date(entry.created_at)
+            .toLocaleDateString();
+
+        return `
+            <div class="guestbook-entry">
+                <div class="guestbook-entry-header">
+                    <strong>${escapeHTML(entry.name)}</strong>
+                    <span>${date}</span>
+                </div>
+
+                <p>${escapeHTML(entry.message)}</p>
+            </div>
+        `;
+
+    }).join("");
 }
+
+
+/* SUBMIT GUESTBOOK */
+
+const guestbookForm =
+    document.getElementById("guestbookForm");
+
+if (guestbookForm) {
+
+    guestbookForm.addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const name =
+            document.getElementById("guestName").value.trim();
+
+        const message =
+            document.getElementById("guestMessage").value.trim();
+
+        const status =
+            document.getElementById("guestbookStatus");
+
+        const button =
+            document.getElementById("guestbookSubmit");
+
+        if (!name || !message) {
+            status.textContent =
+                "PLEASE COMPLETE ALL FIELDS.";
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "SIGNING...";
+
+        const { error } = await supabaseClient
+            .from("guestbook")
+            .insert([
+                {
+                    name: name,
+                    message: message
+                }
+            ]);
+
+        if (error) {
+
+            console.error("Guestbook submission error:", error);
+
+            status.textContent =
+                "ERROR: ENTRY COULD NOT BE SAVED.";
+
+            button.disabled = false;
+            button.textContent = "SIGN ARCHIVE";
+
+            return;
+        }
+
+        status.textContent = "ENTRY RECORDED.";
+
+        guestbookForm.reset();
+
+        button.disabled = false;
+        button.textContent = "SIGN ARCHIVE";
+
+        loadGuestbook();
+    });
+}
+
+
+/* SECURITY */
+
+function escapeHTML(text) {
+
+    const div = document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+}
+
+
+/* LOAD EXISTING ENTRIES */
+
+loadGuestbook();
 
 
 /* =========================
