@@ -2413,43 +2413,110 @@ async function loadGuestbook() {
     }).join("");
 }
 /* SUBMIT GUESTBOOK */
-const guestbookForm = document.getElementById("guestbookForm");
-if (guestbookForm) {
+
+function setupGuestbook() {
+
+    const guestbookForm =
+        document.getElementById("guestbookForm");
+
+    if (!guestbookForm) {
+        console.error("GUESTBOOK FORM NOT FOUND.");
+        return;
+    }
+
     guestbookForm.addEventListener("submit", async function(event) {
+
         event.preventDefault();
-        const name = document.getElementById("guestName").value.trim();
-        const message = document.getElementById("guestMessage").value.trim();
-        const status = document.getElementById("guestbookStatus");
-        const button = document.getElementById("guestbookSubmit");
+        event.stopPropagation();
+
+        const nameInput =
+            document.getElementById("guestName");
+
+        const messageInput =
+            document.getElementById("guestMessage");
+
+        const status =
+            document.getElementById("guestbookStatus");
+
+        const button =
+            document.getElementById("guestbookSubmit");
+
+        const name =
+            nameInput.value.trim();
+
+        const message =
+            messageInput.value.trim();
+
         if (!name || !message) {
-            status.textContent = "PLEASE COMPLETE ALL FIELDS.";
+
+            status.textContent =
+                "PLEASE COMPLETE ALL FIELDS.";
+
             return;
         }
+
         button.disabled = true;
         button.textContent = "SIGNING...";
-        const { error } = await supabaseClient
-            .from("guestbook")
-            .insert([
-                {
+
+        console.log("GUESTBOOK: attempting insert...");
+
+        const { data, error } =
+            await supabaseClient
+                .from("guestbook")
+                .insert({
                     name: name,
                     message: message
-                }
-            ]);
-        if (error) {
-            console.error("Guestbook submission error:", error);
+                })
+                .select();
 
-            status.textContent = "ERROR: ENTRY COULD NOT BE SAVED.";
+        if (error) {
+
+            console.error(
+                "GUESTBOOK SUPABASE ERROR:",
+                error
+            );
+
+            status.textContent =
+                "ERROR: " + error.message;
 
             button.disabled = false;
             button.textContent = "SIGN ARCHIVE";
+
             return;
         }
-        status.textContent = "ENTRY RECORDED.";
+
+        console.log(
+            "GUESTBOOK SUCCESS:",
+            data
+        );
+
+        status.textContent =
+            "ENTRY RECORDED.";
+
         guestbookForm.reset();
+
         button.disabled = false;
-        button.textContent = "SIGN ARCHIVE";
+        button.textContent =
+            "SIGN ARCHIVE";
+
         loadGuestbook();
     });
+}
+
+
+/* WAIT FOR PAGE */
+
+if (document.readyState === "loading") {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        setupGuestbook
+    );
+
+} else {
+
+    setupGuestbook();
+
 }
 /* SECURITY */
 function escapeHTML(text) {
